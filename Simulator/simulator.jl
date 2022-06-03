@@ -14,6 +14,7 @@ module Simulator
     export initialize_orbit, intialize_orbit_oe   # Generate valid initial conditions for a satellite 
     export rk4      # Interface function for updating state 
     export IGRF13   # Function call that provides magnetic field vector given position and time
+    export my_sim
 
     
     """
@@ -219,5 +220,30 @@ module Simulator
         x = [r₀; v₀; q₀; ω₀]
     
         return x, T_orbit 
+    end
+
+    function my_sim(control_fn)
+        x₀ = initialize_orbit() 
+        # x₀[11:13] .=0
+        # x₀[11:13] *= x₀[11:13].*10.0 # Spinning very fast
+
+        J  = [0.3 0 0; 0 0.3 0; 0 0 0.3]  # Arbitrary inertia matrix for the Satellite 
+        t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
+        dt = 0.5                          # Time step, in seconds
+
+        N = 10000
+        q_hist = zeros(N, 4)
+        q_hist[1, :] .= x₀[7:10]
+        x = x₀
+        for i = 1:N - 1
+            r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
+            b = IGRF13(r, t)
+            x = rk4(x, J, control_fn(ω, b), t, dt)
+            t += dt                      # Don't forget to update time (not that it really matters...)
+            q_hist[i + 1, :] .= x[7:10]
+        end
+
+        return (q_hist, "Satellite Attitude Test", "Time", "Quaternion magic")
+
     end
 end

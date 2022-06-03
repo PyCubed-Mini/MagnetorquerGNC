@@ -102,6 +102,22 @@ end
         e_hist[i + 1] = energy(x, J)
     end
 
-    display(plot(e_hist))
+    display(plot(e_hist, title ="Energy"))
 end
 
+
+@testset "DeTumbling" begin 
+    function control_law(ω, b)
+        b̂ = b / norm(b)
+        k = 7e-4
+        # M = -k * (identity(3) - dot(b̂,b̂))*ω
+        M = -k * (I(3) - b̂*b̂')*ω
+        # print(M, ω, b)
+        print(dot(ω,ω),'\n')
+        return M 
+    end
+
+    (data, title, xlablel, ylabel) = my_sim(control_law)
+    display(plot(data, title="DeTumbling", xlabel=xlablel, ylabel=ylabel))
+
+end
