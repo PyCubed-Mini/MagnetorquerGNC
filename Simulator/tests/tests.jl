@@ -1,11 +1,50 @@
 # [Simulator/test/tests.jl]
 
-using Test, LinearAlgebra, SatelliteDynamics, Plots
+using Test, LinearAlgebra, SatelliteDynamics, Plots, JSON
 include("../simulator.jl");   using .Simulator
+
+
+@testset "DeTumbleIO" begin 
+    println("DeTumbleIO")
+    inp = Pipe()
+    out = Pipe()
+    err = Pipe()
+    proc = run(`node mocksat.js`, inp, out, err, wait = false)
+    close(out.in)
+    close(err.in)
+    Base.start_reading(out.out)
+    Base.start_reading(err.out)
+
+    println(readline(proc.out))
+
+    function control_law(ω, b)
+        write(inp, ">>>ω"*string(ω)*"\n")
+        write(inp, ">>>b"*string(b)*"\n")
+        write(inp, ">>>?"*"\n")
+        control = [0,0,0]
+        while true
+            input = readline(proc.out)
+            if length(input) >= 4 && input[1:3] == ">>>"
+                if input[4] == 'M'
+                    control = (input[5:length(input)])
+                    control = JSON.parse(control)
+                end
+                break
+            end
+        end
+        # println(control)
+        return control
+    end
+
+    (data, title, xlablel, ylabel) = my_sim(control_law)
+    display(plot(data, title="DeTumbleIO", xlabel=xlablel, ylabel=ylabel))
+
+end
 
 
 @testset "General Function Call" begin 
     """ Test general function calls and ensure that everything looks as it should """
+    # println("General Function Call")
     x₀ = initialize_orbit() 
 
     # Ensure that r and v are orthogonal 
@@ -113,7 +152,7 @@ end
         # M = -k * (identity(3) - dot(b̂,b̂))*ω
         M = -k * (I(3) - b̂*b̂')*ω
         # print(M, ω, b)
-        print(dot(ω,ω),'\n')
+        # print(dot(ω,ω),'\n')
         return M 
     end
 
