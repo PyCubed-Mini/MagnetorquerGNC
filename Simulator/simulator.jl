@@ -224,6 +224,7 @@ module Simulator
 
     function my_sim(control_fn)
         x₀ = initialize_orbit() 
+        println("intialized orbit!")
         # x₀[11:13] .=0
         # x₀[11:13] *= x₀[11:13].*10.0 # Spinning very fast
 
