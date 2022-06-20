@@ -232,19 +232,26 @@ module Simulator
         t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
         dt = 0.5                          # Time step, in seconds
 
-        N = 10000
+        N = 1000000
         q_hist = zeros(N, 4)
-        q_hist[1, :] .= x₀[7:10]
+        q_hist[1, 1:3] .= x₀[11:13]
+        q_hist[1, 4] = norm(x₀[11:13])
         x = x₀
         for i = 1:N - 1
             r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
             b = IGRF13(r, t)
             x = rk4(x, J, control_fn(ω, b), t, dt)
             t += dt                      # Don't forget to update time (not that it really matters...)
-            q_hist[i + 1, :] .= x[7:10]
+            # q_hist[i + 1, :] .= x[7:10]
+            q_hist[i + 1, 1:3] .= x[11:13]
+            ω = norm(x[11:13])
+            if ω < 0.1
+                break
+            end
+            q_hist[i + 1, 4] = ω
         end
 
-        return (q_hist, "Satellite Attitude Test", "Time", "Quaternion magic")
+        return q_hist
 
     end
 end

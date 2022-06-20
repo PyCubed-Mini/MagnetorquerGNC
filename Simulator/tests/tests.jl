@@ -118,8 +118,8 @@ end
         return M 
     end
 
-    (data, title, xlablel, ylabel) = my_sim(control_law)
-    display(plot(data, title="DeTumbling", xlabel=xlablel, ylabel=ylabel))
+    data = my_sim(control_law)
+    display(plot(data, title="DeTumbling", xlabel="Time (s)", ylabel="Units???", labels=["ω1" "ω2" "ω3" "ω"]))
 
 end
 
@@ -161,7 +161,7 @@ end
         return control
     end
 
-    (data, title, xlablel, ylabel) = my_sim(control_law)
-    display(plot(data, title="DeTumbleIO", xlabel=xlablel, ylabel=ylabel))
+    data = my_sim(control_law)
+    display(plot(data, title="DeTumbleIO", xlabel="Time (s)", ylabel="Units???"))
 
 end
