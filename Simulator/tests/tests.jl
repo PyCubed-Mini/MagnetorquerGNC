@@ -119,7 +119,7 @@ end
     end
 
     data = my_sim(control_law)
-    display(plot(data, title="DeTumbling", xlabel="Time (s)", ylabel="Units???", labels=["ω1" "ω2" "ω3" "ω"]))
+    display(plot(data, title="DeTumbling", xlabel="Time (s)", ylabel="Angular Velocity (rad/s)", labels=["ω1" "ω2" "ω3" "ω"]))
 
 end
 
@@ -162,6 +162,6 @@ end
     end
 
     data = my_sim(control_law)
-    display(plot(data, title="DeTumbleIO", xlabel="Time (s)", ylabel="Units???"))
+    display(plot(data, title="DeTumbleIO", xlabel="Time (s)", ylabel="Angular Velocity (rad/s)"))
 
 end

@@ -245,7 +245,8 @@ module Simulator
             # q_hist[i + 1, :] .= x[7:10]
             q_hist[i + 1, 1:3] .= x[11:13]
             ω = norm(x[11:13])
-            if ω < 0.1
+            if ω < 0.001
+                q_hist = q_hist[1:i, :]
                 break
             end
             q_hist[i + 1, 4] = ω
