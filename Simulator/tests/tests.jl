@@ -106,16 +106,28 @@ end
     display(plot(e_hist, title ="Energy"))
 end
 
+@testset "MEKF/DeTumbling" begin 
+    function control_law(ω, b)
+        b̂ = b / norm(b)
+        k = 7e-4
+        M = -k * (I(3) - b̂*b̂')*ω
+        m = 1 / (dot(b, b)) * cross(b, M)
+        return cross(m, b) 
+    end
+
+    data = my_sim(control_law)
+    display(plot(data, title="MEKF/DeTumbling", xlabel="Time (s)", ylabel="Angular Velocity (rad/s)", labels=["ω1" "ω2" "ω3" "ω"]))
+
+end
+
 
 @testset "DeTumbling" begin 
     function control_law(ω, b)
         b̂ = b / norm(b)
         k = 7e-4
-        # M = -k * (identity(3) - dot(b̂,b̂))*ω
         M = -k * (I(3) - b̂*b̂')*ω
-        # print(M, ω, b)
-        # print(dot(ω,ω),'\n')
-        return M 
+        m = 1 / (dot(b, b)) * cross(b, M)
+        return cross(m, b) 
     end
 
     data = my_sim(control_law)
@@ -162,6 +174,6 @@ end
     end
 
     data = my_sim(control_law)
-    display(plot(data, title="DeTumbleIO", xlabel="Time (s)", ylabel="Angular Velocity (rad/s)"))
+    display(plot(data, title="DeTumbleIO", xlabel="Time (s)", ylabel="Angular Velocity (rad/s)", labels=["ω1" "ω2" "ω3" "ω"]))
 
 end
