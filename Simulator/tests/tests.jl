@@ -116,7 +116,7 @@ end
     end
 
     data = my_sim_kf(control_law)
-    display(plot(data, title="MEKF/DeTumbling", xlabel="Time (s)", ylabel="Angular Velocity (rad/s)", labels=["ω1" "ω2" "ω3" "ω"]))
+    display(plot(data, title="MEKF/DeTumbling", xlabel="Time (s)", ylabel="Angular Velocity (rad/s)", labels=["ω" "i1" "i2" "i3" "r" "i1'" "i2'" "i3'" "r'"]))
 
 end
 

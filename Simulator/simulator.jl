@@ -247,11 +247,11 @@ module Simulator
             # q_hist[i + 1, :] .= x[7:10]
             q_hist[i + 1, 1:3] .= x[11:13]
             ω = norm(x[11:13])
+            q_hist[i + 1, 4] = ω
             if ω < 0.001
                 q_hist = q_hist[1:i, :]
                 break
             end
-            q_hist[i + 1, 4] = ω
         end
 
         return q_hist
@@ -285,9 +285,9 @@ module Simulator
             q_hist[i + 1, 1] = norm(ω)
             q_hist[i + 1, 2:5] .= q
 
-            q_hist[i+1, 6:9] .= step(kf, q)
+            q_hist[i+1, 6:9] .= step(kf, q, ω, dt)
 
-            if ω < 0.001
+            if norm(ω) < 0.1
                 q_hist = q_hist[1:i, :]
                 break
             end
