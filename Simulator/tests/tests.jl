@@ -115,14 +115,15 @@ end
         return cross(m, b) 
     end
 
-    data = my_sim_kf(control_law, 20)
+    data = my_sim_kf(control_law, 15)
     display(plot(
         data, 
         title="MEKF/DeTumbling", 
         xlabel="Time (s)", 
         ylabel="Angular Velocity (rad/s)", 
         labels=["ω" "s" "v1" "v2" "v3" "s'" "v1'" "v2'" "v3'"],
-        linecolor=[:red :blue :green :purple :orange :blue :green :purple :orange]
+        linecolor=[:red :blue :green :purple :orange :blue :green :purple :orange],
+        linewidth=[1 1 1 1 1 3 3 3 3],
     ))
 
 end

@@ -266,7 +266,7 @@ module Simulator
 
         J  = [0.3 0 0; 0 0.3 0; 0 0 0.3]  # Arbitrary inertia matrix for the Satellite 
         t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
-        dt = 0.01                          # Time step, in seconds
+        dt = 0.1                          # Time step, in seconds
 
         q_hist = zeros(N, 9)
         q_hist[1, 1] = norm(x₀[11:13])
@@ -294,12 +294,13 @@ module Simulator
             inertial_sun = normalize(r_sun - r)
             inertial_mag = normalize(b)
 
-            rsun = (rand(3) * .01 .- 0.005)
-            rmag = (rand(3) * .01 .- 0.005)
+            # rsun = (rand(3) * .01 .- 0.005)
+            # rmag = (rand(3) * .01 .- 0.005)
+            rsun = [0;0;0]
+            rmag = [0;0;0]
             Q = quaternionToMatrix(q)
             body_sun = Q * (normalize(inertial_sun + rsun))
             body_mag = Q * (normalize(inertial_mag + rmag))
-            println("body_sun: ", body_sun, "body_sun(predicted): ", Q * inertial_sun)
             step(kf, ω, dt, inertial_mag, inertial_sun, body_mag, body_sun)
             q_hist[i+1, 6:9] .= kf.q
 
