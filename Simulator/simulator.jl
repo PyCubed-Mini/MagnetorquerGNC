@@ -258,7 +258,7 @@ module Simulator
 
     end
 
-    function my_sim_kf(control_fn)
+    function my_sim_kf(control_fn, N)
         x₀ = initialize_orbit() 
         println("intialized orbit!")
         # x₀[11:13] .=0
@@ -268,24 +268,31 @@ module Simulator
         t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
         dt = 0.5                          # Time step, in seconds
 
-        N = 1000000
         q_hist = zeros(N, 9)
         q_hist[1, 1] = norm(x₀[11:13])
         x = x₀
         
         q₀ = x₀[7:10]
-        P = Diagonal([1, 1, 1, 1])
-        kf = EKF(q₀, P)
+        β₀ = [0; 0; 0]
+        P₀ = I(6)
+        kf = EKF(q₀, β₀, P₀)
 
         for i = 1:N - 1
             r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
+
             b = IGRF13(r, t)
+            r_sun  = sun_position(t)
+            to_sun = r_sun - r
+
             x = rk4(x, J, control_fn(ω, b), t, dt)
             t += dt                      # Don't forget to update time (not that it really matters...)
             q_hist[i + 1, 1] = norm(ω)
             q_hist[i + 1, 2:5] .= q
 
-            q_hist[i+1, 6:9] .= step(kf, q, ω, dt)
+            rsun = (rand(3) * .05 .- 0.025)
+            rb = (rand(3) * .05 .- 0.025)
+            step(kf, ω, dt, to_sun, b, to_sun + rsun, b + rb)
+            q_hist[i+1, 6:9] .= kf.q
 
             if norm(ω) < 0.1
                 q_hist = q_hist[1:i, :]

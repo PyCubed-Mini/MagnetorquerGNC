@@ -22,8 +22,13 @@ function f(
     δt::Float64
 )
     θ = norm(ω - β) * δt
-    r = (ω - β) / norm(ω - e.β)
-    return [L(q) * [r .* sin(θ / 2); cos(θ / 2)], β]
+    r = (ω - β) / norm(ω - β)
+    return L(q) * [r .* sin(θ / 2); cos(θ / 2)]
+end
+
+function quaternionToMatrix(q::Vector{Float64})
+    s, v = q[1], q[2:4]
+    return I(3) + 2 * hat(v) * (s * I(3) + hat(v))
 end
 
 function step(
@@ -36,22 +41,35 @@ function step(
     ᵇr_sun::Vector{Float64}
 )
     # Predict:
-    xₚ = f(e.q, e.β, ω, δt)
+    qₚ = f(e.q, e.β, ω, δt) # β remains constant
     R = exp(-hat(ω - e.β) * δt)
     A = [
         R (-δt*I(3))
         zeros(3, 3) I(3)
     ]
-    W = zeros(6, 6) # related to some noise or something (ask Zac)
-    Pₚ = A * P * A' + W
+    W = I(6) * 0.01 # related to some noise or something (ask Zac)
+    Pₚ = A * e.P * A' + W
     # Innovation
+    Q = quaternionToMatrix(qₚ)
     Z = [ᵇr_mag; ᵇr_sun] - [Q zeros(3, 3); zeros(3, 3) Q] * [ⁿr_mag; ⁿr_sun]
-    C = [hat(ᵇr_mag) zeroes(3, 3); hat(ᵇr_sun) zeros(3, 3)]
-    V = zeros(3, 3) # Something else
+    C = [hat(ᵇr_mag) zeros(3, 3); hat(ᵇr_sun) zeros(3, 3)]
+    V = I(6) * 0.01 # Something else
     S = C * Pₚ * C' + V
     # Kalman Gain
-    L = Pₚ * C' * inv(S)
+    print(S)
+    Lk = Pₚ * C' * inv(S)
     # Update
-    δx = L * Z
-    return e.q
+    δx = Lk * Z
+    ϕ = δx[1:3]
+    δβ = δx[4:6]
+    θ = norm(ϕ)
+    r = ϕ / θ
+    qᵤ = ⊙(qₚ, [r * sin(θ / 2); cos(θ / 2)])
+    βᵤ = e.β + δβ
+    Pᵤ = (I(6) - Lk * C) * Pₚ * (I(6) - Lk * C)' + Lk * V * Lk'
+
+    e.q = qᵤ
+    e.β = βᵤ
+    e.P = Pᵤ
+    return e
 end
