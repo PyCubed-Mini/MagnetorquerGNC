@@ -23,12 +23,7 @@ function f(
 )
     θ = norm(ω - β) * δt
     r = (ω - β) / norm(ω - β)
-    return L(q) * [r .* sin(θ / 2); cos(θ / 2)]
-end
-
-function quaternionToMatrix(q::Vector{Float64})
-    s, v = q[1], q[2:4]
-    return I(3) + 2 * hat(v) * (s * I(3) + hat(v))
+    return L(q) * [cos(θ / 2); r * sin(θ / 2)]
 end
 
 function step(
@@ -49,24 +44,29 @@ function step(
     ]
     W = I(6) * 0.01 # related to some noise or something (ask Zac)
     Pₚ = A * e.P * A' + W
+
     # Innovation
     Q = quaternionToMatrix(qₚ)
     Z = [ᵇr_mag; ᵇr_sun] - [Q zeros(3, 3); zeros(3, 3) Q] * [ⁿr_mag; ⁿr_sun]
+    println(Z)
+    println("q's should be about the same", qₚ, e.q)
+    println("should be about equal for sun vector", Q * ⁿr_sun, ᵇr_sun)
     C = [hat(ᵇr_mag) zeros(3, 3); hat(ᵇr_sun) zeros(3, 3)]
     V = I(6) * 0.01 # Something else
     S = C * Pₚ * C' + V
+
     # Kalman Gain
-    print(S)
-    Lk = Pₚ * C' * inv(S)
+    L = Pₚ * C' * inv(S)
+
     # Update
-    δx = Lk * Z
+    δx = L * Z
     ϕ = δx[1:3]
     δβ = δx[4:6]
     θ = norm(ϕ)
     r = ϕ / θ
-    qᵤ = ⊙(qₚ, [r * sin(θ / 2); cos(θ / 2)])
+    qᵤ = ⊙(qₚ, [cos(θ / 2); r * sin(θ / 2)])
     βᵤ = e.β + δβ
-    Pᵤ = (I(6) - Lk * C) * Pₚ * (I(6) - Lk * C)' + Lk * V * Lk'
+    Pᵤ = (I(6) - L * C) * Pₚ * (I(6) - L * C)' + L * V * L'
 
     e.q = qᵤ
     e.β = βᵤ

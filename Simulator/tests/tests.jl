@@ -115,7 +115,7 @@ end
         return cross(m, b) 
     end
 
-    data = my_sim_kf(control_law, 5)
+    data = my_sim_kf(control_law, 20)
     display(plot(
         data, 
         title="MEKF/DeTumbling", 

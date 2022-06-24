@@ -89,3 +89,15 @@ const T = [1 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 -1]   # Forms the conjugate of q, 
 
 ⊙(q₁, q₂) = L(q₂) * q₁   # Hamiltonian product 
 
+""" quaternionToMatrix (q)
+    Arguments:
+     - q: Scalar-first unit quaternion                               | [4,]
+
+    Returns:
+     - Q: Rotation matrix representing the same rotation
+"""
+function quaternionToMatrix(q::Vector{Float64})
+    s, v = q[1], q[2:4]
+    return I(3) + 2 * hat(v) * (s * I(3) + hat(v))
+end
+
