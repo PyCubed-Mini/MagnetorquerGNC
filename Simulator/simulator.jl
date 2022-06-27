@@ -262,7 +262,7 @@ module Simulator
         x₀ = initialize_orbit() 
         println("intialized orbit!")
         # x₀[11:13] .=0
-        # x₀[11:13] *= x₀[11:13].*10.0 # Spinning very fast
+        x₀[11:13] /= 4.0 # Spinning very fast
 
         J  = [0.3 0 0; 0 0.3 0; 0 0 0.3]  # Arbitrary inertia matrix for the Satellite 
         t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
@@ -302,7 +302,7 @@ module Simulator
             # rmag = (rand(3) * .01 .- 0.005)
             rsun = [0;0;0]
             rmag = [0;0;0]
-            Q = quaternionToMatrix(q)
+            Q = quaternionToMatrix(q)'
             body_sun = Q * (normalize(inertial_sun + rsun))
             body_mag = Q * (normalize(inertial_mag + rmag))
             if type == "simple"

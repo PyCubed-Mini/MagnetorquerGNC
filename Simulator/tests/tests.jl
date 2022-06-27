@@ -1,6 +1,6 @@
 # [Simulator/test/tests.jl]
 
-using Test, LinearAlgebra, SatelliteDynamics, Plots, JSON
+using Test, LinearAlgebra, SatelliteDynamics, Plots, JSON, Random
 include("../simulator.jl");   using .Simulator
 
 
@@ -107,6 +107,7 @@ end
 end
 
 @testset "MEKF/DeTumbling" begin 
+    Random.seed!()
     function control_law(ω, b)
         b̂ = b / norm(b)
         k = 7e-4
@@ -128,7 +129,7 @@ end
         ylabel="Angular Velocity (rad/s)", 
         labels=["ω" "s" "v1" "v2" "v3" "s'" "v1'" "v2'" "v3'"],
         linecolor=[:red :blue :green :purple :orange :blue :green :purple :orange],
-        linewidth=[1 1 1 1 1 1 1 1 1],
+        linewidth=[1 1 1 1 1 3 3 3 3],
     ))
 
 end

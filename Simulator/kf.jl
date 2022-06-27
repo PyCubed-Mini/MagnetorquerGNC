@@ -22,7 +22,7 @@ function f(
     δt::Float64
 )
     θ = norm(ω - β) * δt
-    r = (ω - β) / norm(ω - β)
+    r = normalize(ω - β)
     return L(q) * [cos(θ / 2); r * sin(θ / 2)]
 end
 
@@ -50,7 +50,7 @@ function step(
     Pₚ = A * P * A' + W
 
     # Innovation
-    Q = quaternionToMatrix(qₚ)
+    Q = quaternionToMatrix(qₚ)'
     Z = [ᵇr_mag; ᵇr_sun] - [Q zeros(3, 3); zeros(3, 3) Q] * [ⁿr_mag; ⁿr_sun]
     C = [hat(ᵇr_mag) zeros(3, 3); hat(ᵇr_sun) zeros(3, 3)]
     S = C * Pₚ * C' + V
@@ -62,7 +62,7 @@ function step(
     δx = L * Z
     ϕ = δx[1:3]
     δβ = δx[4:6]
-    θ = -norm(ϕ)
+    θ = norm(ϕ)
     r = normalize(ϕ)
     qᵤ = ⊙(qₚ, [cos(θ / 2); r * sin(θ / 2)])
     βᵤ = e.β + δβ
@@ -71,7 +71,6 @@ function step(
     e.q = qᵤ
     e.β = βᵤ
     e.P = Pᵤ
-    println("β: ", e.β, "δβ: ", δβ)
     return e
 end
 
@@ -95,7 +94,7 @@ function simplest_step(
     qₚ = ⊙(q, [cos(θ / 2); r * sin(θ / 2)])
     Pₚ = P + W
     # Innovation
-    Q = quaternionToMatrix(qₚ)
+    Q = quaternionToMatrix(qₚ)'
     Z = [ᵇr_mag; ᵇr_sun] - [Q zeros(3, 3); zeros(3, 3) Q] * [ⁿr_mag; ⁿr_sun]
     C = [hat(Q * ⁿr_mag); hat(Q * ⁿr_sun)]
     S = C * Pₚ * C' + V
@@ -103,7 +102,7 @@ function simplest_step(
     L = Pₚ * C' * inv(S)
     # Update
     ϕ = L * Z
-    θ = -norm(ϕ)
+    θ = norm(ϕ)
     r = normalize(ϕ)
     e.q = ⊙(qₚ, [cos(θ / 2); r * sin(θ / 2)])
     e.P = (I(3) - L * C) * Pₚ * (I(3) - L * C)' + L * V * L'

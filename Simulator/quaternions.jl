@@ -87,7 +87,7 @@ const H = [zeros(1, 3); I(3)]     # Converts from a 3-element vector to a 4-elem
 const T = [1 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 -1]   # Forms the conjugate of q, i.e. q† = Tq   
 
 
-⊙(q₁, q₂) = L(q₂) * q₁   # Hamiltonian product 
+⊙(q₁, q₂) = L(q₁) * q₂   # Hamiltonian product 
 
 """ quaternionToMatrix (q)
     Arguments:
@@ -101,3 +101,6 @@ function quaternionToMatrix(q::Vector{Float64})
     return I(3) + 2 * hat(v) * (s * I(3) + hat(v))
 end
 
+function qErr(q₁, q₂)
+    return norm((L(q₁)' * q₂)[2:4])
+end
