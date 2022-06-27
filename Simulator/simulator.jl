@@ -258,7 +258,7 @@ module Simulator
 
     end
 
-    function my_sim_kf(control_fn, N)
+    function my_sim_kf(control_fn, N, type)
         x₀ = initialize_orbit() 
         println("intialized orbit!")
         # x₀[11:13] .=0
@@ -276,7 +276,11 @@ module Simulator
         
         q₀ = x₀[7:10]
         β₀ = [0; 0; 0]
+
         P₀ = I(6)
+        if type == "simple"
+            P₀ = I(3)
+        end
         println("q0:", q₀)
         kf = EKF(q₀, β₀, P₀)
 
@@ -301,7 +305,11 @@ module Simulator
             Q = quaternionToMatrix(q)
             body_sun = Q * (normalize(inertial_sun + rsun))
             body_mag = Q * (normalize(inertial_mag + rmag))
-            step(kf, ω, dt, inertial_mag, inertial_sun, body_mag, body_sun)
+            if type == "simple"
+                simplest_step(kf, ω, dt, inertial_mag, inertial_sun, body_mag, body_sun)
+            else 
+                step(kf, ω, dt, inertial_mag, inertial_sun, body_mag, body_sun)
+            end
             q_hist[i+1, 6:9] .= kf.q
 
             if norm(ω) < 0.1

@@ -115,15 +115,20 @@ end
         return cross(m, b) 
     end
 
-    data = my_sim_kf(control_law, 5000)
+    type = "smple"
+    data = my_sim_kf(control_law, 5000, type)
+    name = "MEKF/DeTumbling"
+    if type == "simple"
+        name = "MEKF(simplest)/DeTumbling"
+    end
     display(plot(
         data, 
-        title="MEKF/DeTumbling", 
+        title=name, 
         xlabel="Time (s)", 
         ylabel="Angular Velocity (rad/s)", 
         labels=["ω" "s" "v1" "v2" "v3" "s'" "v1'" "v2'" "v3'"],
         linecolor=[:red :blue :green :purple :orange :blue :green :purple :orange],
-        linewidth=[1 1 1 1 1 3 3 3 3],
+        linewidth=[1 1 1 1 1 1 1 1 1],
     ))
 
 end
