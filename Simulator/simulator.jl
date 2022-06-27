@@ -266,7 +266,7 @@ module Simulator
 
         J  = [0.3 0 0; 0 0.3 0; 0 0 0.3]  # Arbitrary inertia matrix for the Satellite 
         t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
-        dt = 0.1                          # Time step, in seconds
+        dt = 0.01                          # Time step, in seconds
 
         q_hist = zeros(N, 9)
         q_hist[1, 1] = norm(x₀[11:13])

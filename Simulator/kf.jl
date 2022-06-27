@@ -42,24 +42,22 @@ function step(
         R (-δt*I(3))
         zeros(3, 3) I(3)
     ]
-    W = I(6) * 0.01 # related to some noise or something (ask Zac)
+    W = I(6) * 1e-5 # related to some noise or something (ask Zac)
     Pₚ = A * e.P * A' + W
 
     # Innovation
     Q = quaternionToMatrix(qₚ)
     Z = [ᵇr_mag; ᵇr_sun] - [Q zeros(3, 3); zeros(3, 3) Q] * [ⁿr_mag; ⁿr_sun]
     C = [hat(ᵇr_mag) zeros(3, 3); hat(ᵇr_sun) zeros(3, 3)]
-    V = I(6) * 0.01 # Something else
+    V = I(6) * 1e-5 # Something else
     S = C * Pₚ * C' + V
 
     # Kalman Gain
     L = Pₚ * C' * inv(S)
 
     # Update
-    println("Z: ", Z)
+    # println("Z: ", Z)
     δx = L * Z
-    println(size(L), size(Z))
-    println(δx, size(δx))
     ϕ = δx[1:3]
     δβ = δx[4:6]
     θ = norm(ϕ)
@@ -71,6 +69,6 @@ function step(
     e.q = qᵤ
     e.β = βᵤ
     e.P = Pᵤ
-    println("β: ", e.β, "δβ: ", δβ)
+    # println("β: ", e.β, "δβ: ", δβ)
     return e
 end
