@@ -262,16 +262,13 @@ module Simulator
         x₀ = initialize_orbit() 
         println("intialized orbit!")
         # x₀[11:13] .=0
-        x₀[11:13] /= 4.0 # Spinning very fast
+        # x₀[11:13] /= 4.0 # Spinning very fast
 
         J  = [0.3 0 0; 0 0.3 0; 0 0 0.3]  # Arbitrary inertia matrix for the Satellite 
         t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
         dt = 0.01                          # Time step, in seconds
 
-        q_hist = zeros(N, 9)
-        q_hist[1, 1] = norm(x₀[11:13])
-        q_hist[1, 2:5] .= x₀[7:10]
-        q_hist[1, 6:9] .= x₀[7:10]
+        q_hist = zeros(N, 10)
         x = x₀
         
         q₀ = x₀[7:10]
@@ -283,16 +280,19 @@ module Simulator
         end
         println("q0:", q₀)
         kf = EKF(q₀, β₀, P₀)
+        q_hist[1, 1:4] .= x₀[7:10]
+        q_hist[1, 5:8] .= x₀[7:10]
+        q_hist[1, 9] = norm(x₀[11:13])
+        q_hist[1, 10] = qErr(kf.q, q₀)
 
         for i = 1:N - 1
+            println(i/N)
             r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
 
             b = IGRF13(r, t)
 
             x = rk4(x, J, control_fn(ω, b), t, dt)
             t += dt                      # Don't forget to update time (not that it really matters...)
-            q_hist[i + 1, 1] = norm(ω)
-            q_hist[i + 1, 2:5] .= q
 
             r_sun  = sun_position(t)
             inertial_sun = normalize(r_sun - r)
@@ -310,7 +310,10 @@ module Simulator
             else 
                 step(kf, ω, dt, inertial_mag, inertial_sun, body_mag, body_sun)
             end
-            q_hist[i+1, 6:9] .= kf.q
+            q_hist[i + 1, 1:4] .= q
+            q_hist[i + 1, 5:8] .= kf.q
+            q_hist[i + 1, 9] = norm(ω)
+            q_hist[i + 1, 10] = qErr(kf.q, q)
 
             if norm(ω) < 0.1
                 q_hist = q_hist[1:i, :]

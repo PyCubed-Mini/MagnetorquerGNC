@@ -117,20 +117,28 @@ end
     end
 
     type = "smple"
-    data = my_sim_kf(control_law, 5000, type)
+    data = my_sim_kf(control_law, 100000, type)
     name = "MEKF/DeTumbling"
     if type == "simple"
         name = "MEKF(simplest)/DeTumbling"
     end
-    display(plot(
-        data, 
+    p1 = (plot(
+        data[:, 1:9], 
         title=name, 
         xlabel="Time (s)", 
         ylabel="Angular Velocity (rad/s)", 
-        labels=["ω" "s" "v1" "v2" "v3" "s'" "v1'" "v2'" "v3'"],
-        linecolor=[:red :blue :green :purple :orange :blue :green :purple :orange],
-        linewidth=[1 1 1 1 1 3 3 3 3],
+        labels=["s" "v1" "v2" "v3" "s'" "v1'" "v2'" "v3'" "ω"],
+        linecolor=[:blue :green :purple :orange :blue :green :purple :orange :red],
+        linewidth=[1 1 1 1 3 3 3 3 1],
     ))
+    p2 = plot(
+        data[:, 10],
+        title="quaternion error",
+        xlabel="Time (s)",
+        ylabel="Radians",
+    )
+    display(p1)
+    display(p2)
 
 end
 
