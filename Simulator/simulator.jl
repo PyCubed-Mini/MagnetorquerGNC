@@ -268,7 +268,7 @@ module Simulator
 
         J  = [0.3 0 0; 0 0.3 0; 0 0 0.3]  # Arbitrary inertia matrix for the Satellite 
         t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
-        dt = 0.1                          # Time step, in seconds
+        dt = 0.01                          # Time step, in seconds
 
         q_true = zeros(N, 4)
         q_predicted = zeros(N, 4)
@@ -288,12 +288,6 @@ module Simulator
         println("q0:", q₀)
         kf = EKF(q₀, β₀, P₀)
 
-        q_true[1, :] .= q₀
-        q_predicted[1, :] .= q₀
-        ω_true[1] = norm(x₀[11:13])
-        q_error[1] = qErr(kf.q, q₀)
-        β_error[1] = 0
-
         Vβ = I(3) * 0.01
         Vω = I(3) * 0.1
         gyro = Gyro(β₀, Vβ, Vω)
@@ -306,13 +300,11 @@ module Simulator
                 println(string(cur * 100) * "%")
                 cur += progress_step
             end
+        
             r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
             ω_read = update(gyro, ω)
 
             b = IGRF13(r, t)
-
-            x = rk4(x, J, control_fn(ω, b), t, dt)
-            t += dt  # Don't forget to update time
 
             r_sun  = sun_position(t)
             inertial_sun = normalize(r_sun - r)
@@ -328,11 +320,12 @@ module Simulator
             else 
                 step(kf, ω_read, dt, inertial_mag, inertial_sun, body_mag, body_sun)
             end
-            q_true[i + 1,:] .= q
-            q_predicted[i + 1,:] .= kf.q
-            ω_true[i + 1] = norm(ω)
-            q_error[i + 1] = qErr(kf.q, q)
-            β_error[i + 1] = eulerError(gyro.β, kf.β)
+            q_true[i,:] .= q
+            q_predicted[i,:] .= kf.q
+            ω_true[i] = norm(ω)
+            q_error[i] = qErr(kf.q, q)
+            β_error[i] = eulerError(gyro.β, kf.β)
+
 
             if norm(ω) < 0.1
                 q_true = q_true[1:i, :]
@@ -342,6 +335,9 @@ module Simulator
                 β_error = β_error[1:i]
                 break
             end
+            # propogate everything forward
+            x = rk4(x, J, control_fn(ω_read - kf.β, b), t, dt)
+            t += dt  # Don't forget to update time
         end
 
         return q_true, q_predicted, ω_true, q_error, β_error
