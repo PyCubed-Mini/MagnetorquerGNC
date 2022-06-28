@@ -17,12 +17,12 @@ using LinearAlgebra     # For I, norm
     Returns:
      - M:  A [3 × 3] skew-symmetric matrix    |  [3, 3]
 """
-function hat(v) 
-    M = [0.0  -v[3]  v[2];
-         v[3]  0.0  -v[1];
-        -v[2]  v[1]  0.0]
+function hat(v)
+    M = [0.0 -v[3] v[2]
+        v[3] 0.0 -v[1]
+        -v[2] v[1] 0.0]
 
-    return M    
+    return M
 end
 
 """ L(q) 
@@ -36,11 +36,11 @@ end
     Returns: 
      - M:  Left-side matrix representing the given quaternion     |  [4, 4]
 """
-function L(q) 
+function L(q)
     qₛ, qᵥ = q[1], q[2:4]
 
-    M = [qₛ     -qᵥ';
-         qᵥ     qₛ*I(3) + hat(qᵥ)]
+    M = [qₛ -qᵥ'
+        qᵥ qₛ*I(3)+hat(qᵥ)]
 
     return M
 end
@@ -57,11 +57,11 @@ end
     Returns: 
      - M:  Right-side matrix representing the given quaternion     |  [4, 4]
 """
-function R(q) 
+function R(q)
     qₛ, qᵥ = q[1], q[2:4]
 
-    M = [qₛ     -qᵥ';
-         qᵥ     qₛ*I(3) - hat(qᵥ)]
+    M = [qₛ -qᵥ'
+        qᵥ qₛ*I(3)-hat(qᵥ)]
 
     return M
 end
@@ -77,7 +77,7 @@ end
     Returns:
      - q̇:  Derivative of attitude, parameterized as a quaternion     |  [4,]
 """
-function qdot(q, ω) 
+function qdot(q, ω)
     q̇ = 0.5 * L(q) * H * ω
     return q̇
 end
@@ -102,5 +102,9 @@ function quaternionToMatrix(q::Vector{Float64})
 end
 
 function qErr(q₁, q₂)
-    return norm((L(q₁)' * q₂)[2:4])
+    return norm((L(q₁)'*q₂)[2:4])
+end
+
+function eulerError(e1, e2)
+    return acos(dot(e1, e2) / (norm(e1) * norm(e2)))
 end
