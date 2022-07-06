@@ -113,15 +113,11 @@ end
         k = 7e-4
         M = -k * (I(3) - b̂*b̂')*ω
         m = 1 / (dot(b, b)) * cross(b, M)
-        return cross(m, b) 
+        return m, 1e8  #  half a second in nano seconds
     end
 
-    type = "smple"
-    q_true, q_predicted, ω_true, q_error, β_error = my_sim_kf(control_law, 100000, type)
+    q_true, q_predicted, ω_true, q_error, β_error = my_sim_kf(control_law, 100000)
     name = "MEKF/DeTumbling"
-    if type == "simple"
-        name = "MEKF(simplest)/DeTumbling"
-    end
     q_plot = (plot(
         hcat(q_true, q_predicted),
         title=name, 
@@ -155,12 +151,13 @@ end
 
 
 @testset "DeTumbling" begin 
+    println("DeTumbling")
     function control_law(ω, b)
         b̂ = b / norm(b)
         k = 7e-4
         M = -k * (I(3) - b̂*b̂')*ω
         m = 1 / (dot(b, b)) * cross(b, M)
-        return cross(m, b) 
+        return m 
     end
 
     data = my_sim(control_law)
@@ -174,7 +171,7 @@ end
     inp = Pipe()
     out = Pipe()
     err = Pipe()
-    proc = run(Cmd(`python3 -u main.py`, dir = "/home/thetazero/Documents/pycubed/software_example_beepsat/state_machine/build/" ), inp, out, err, wait = false)
+    proc = run(Cmd(`faketime -f '-0 x1' python3 -u main.py`, dir = "/home/thetazero/Documents/pycubed/software_example_beepsat/state_machine/build/" ), inp, out, err, wait = false)
     close(out.in)
     close(err.in)
     Base.start_reading(out.out)
@@ -185,28 +182,42 @@ end
     i=0
 
     function control_law(ω, b)
-        println("wrote to sensors")
         control = [0,0,0]
-        while true
+        got_control = false
+        got_time = false
+
+        cur_time = 0
+        last_time = time() * 1e9 - 1  # Time in nanoseconds
+        while !(got_control && got_time)
             write(inp, ">>>ω"*string(ω)*"\n")
             write(inp, ">>>b"*string(b)*"\n")
-            write(inp, ">>>?\n")
             input = readline(proc.out)
-            println(input)
+            # println(input)
             if length(input) >= 4 && input[1:3] == ">>>"
-                if input[4] == 'M'
+                if input[4] == 'm'
                     control = (input[5:length(input)])
                     control = JSON.parse(control)
+                    got_control = true
+                elseif input[4] == 't'
+                    cur_time = parse(Int64, input[5:length(input)])
+                    got_time = true
                 end
+            end
+            if got_control && got_time 
                 break
             end
         end
         i+=1
-        println(i)
-        return control
+
+        println("I: ", i)
+
+        dt = norm(cur_time - last_time)
+        last_time = cur_time
+        println("control: ", control, " dt: ", dt)
+        return control, dt
     end
 
-    data = my_sim(control_law)
+    data = my_sim_kf(control_law, 1000000)
     display(plot(data, title="DeTumbleIO", xlabel="Time (s)", ylabel="Angular Velocity (rad/s)", labels=["ω1" "ω2" "ω3" "ω"]))
 
 end

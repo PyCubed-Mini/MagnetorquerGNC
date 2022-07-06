@@ -47,7 +47,7 @@ module Simulator
         r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
 
         if norm(r) < Rₑ
-            error("Error: Satellite impacted Earth at time $t!")
+            error("Error: Satellite impacted Earth at time $t !")
         end
 
 
@@ -244,7 +244,8 @@ module Simulator
         for i = 1:N - 1
             r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
             b = IGRF13(r, t)
-            x = rk4(x, J, control_fn(ω, b), t, dt)
+            m = control_fn(ω, b)
+            x = rk4(x, J, cross(m, b), t, dt)
             t += dt                      # Don't forget to update time (not that it really matters...)
             # q_hist[i + 1, :] .= x[7:10]
             q_hist[i + 1, 1:3] .= x[11:13]
@@ -260,11 +261,9 @@ module Simulator
 
     end
 
-    function my_sim_kf(control_fn, N, type)
+    function my_sim_kf(control_fn, N)
         x₀ = initialize_orbit() 
         println("intialized orbit!")
-        # x₀[11:13] .=0
-        # x₀[11:13] /= 4.0 # Spinning very fast
 
         J  = [0.3 0 0; 0 0.3 0; 0 0 0.3]  # Arbitrary inertia matrix for the Satellite 
         t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
@@ -282,9 +281,6 @@ module Simulator
         β₀ = [0; 0; 0]
 
         P₀ = I(6)
-        if type == "simple"
-            P₀ = I(3)
-        end
         println("q0:", q₀)
         kf = EKF(q₀, β₀, P₀)
 
@@ -292,7 +288,7 @@ module Simulator
         Vω = I(3) * 0.1
         gyro = Gyro(β₀, Vβ, Vω)
 
-        progress_step = 0.01
+        progress_step = 0.001
         cur = progress_step
 
         for i = 1:N - 1
@@ -315,11 +311,7 @@ module Simulator
             Q = quaternionToMatrix(q)'
             body_sun = randomMatrix(0.001) * Q * (normalize(inertial_sun + rsun))
             body_mag = randomMatrix(0.001) * Q * (normalize(inertial_mag + rmag))
-            if type == "simple"
-                simplest_step(kf, ω_read, dt, inertial_mag, inertial_sun, body_mag, body_sun)
-            else 
-                step(kf, ω_read, dt, inertial_mag, inertial_sun, body_mag, body_sun)
-            end
+            step(kf, ω_read, dt, inertial_mag, inertial_sun, body_mag, body_sun)
             q_true[i,:] .= q
             q_predicted[i,:] .= kf.q
             ω_true[i] = norm(ω)
@@ -336,7 +328,9 @@ module Simulator
                 break
             end
             # propogate everything forward
-            x = rk4(x, J, control_fn(ω_read - kf.β, b), t, dt)
+            control, dt = control_fn(ω_read - kf.β, b)
+            dt /= 1e9  # convert from nanoseconds to seconds
+            x = rk4(x, J, cross(control, b), t, dt)
             t += dt  # Don't forget to update time
         end
 
