@@ -319,7 +319,7 @@ module Simulator
             β_error[i] = eulerError(gyro.β, kf.β)
 
 
-            if norm(ω) < 0.1
+            if norm(ω) < 0.01
                 q_true = q_true[1:i, :]
                 q_predicted = q_predicted[1:i, :]
                 ω_true = ω_true[1:i]

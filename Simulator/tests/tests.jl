@@ -1,6 +1,6 @@
 # [Simulator/test/tests.jl]
 
-using Test, LinearAlgebra, SatelliteDynamics, Plots, JSON, Random
+using Test, LinearAlgebra, SatelliteDynamics, Plots, JSON, Random, Dates
 include("../simulator.jl");   using .Simulator
 
 
@@ -167,11 +167,12 @@ end
 
 
 @testset "DeTumbleIO" begin 
+    Random.seed!()
     println("DeTumbleIO")
     inp = Pipe()
     out = Pipe()
     err = Pipe()
-    proc = run(Cmd(`faketime -f '-0 x1' python3 -u main.py`, dir = "/home/thetazero/Documents/pycubed/software_example_beepsat/state_machine/build/" ), inp, out, err, wait = false)
+    proc = run(Cmd(`faketime -f '-0 x100' python3 -u main.py`, dir = "/home/thetazero/Documents/pycubed/software_example_beepsat/state_machine/build/" ), inp, out, err, wait = false)
     close(out.in)
     close(err.in)
     Base.start_reading(out.out)
@@ -181,16 +182,16 @@ end
     
     i=0
 
+    last_time = time() * Int(1e9)  # Time in nanoseconds
     function control_law(ω, b)
         control = [0,0,0]
         got_control = false
         got_time = false
 
         cur_time = 0
-        last_time = time() * 1e9 - 1  # Time in nanoseconds
+        write(inp, ">>>ω"*string(ω)*"\n")
+        write(inp, ">>>b"*string(b)*"\n")
         while !(got_control && got_time)
-            write(inp, ">>>ω"*string(ω)*"\n")
-            write(inp, ">>>b"*string(b)*"\n")
             input = readline(proc.out)
             # println(input)
             if length(input) >= 4 && input[1:3] == ">>>"
@@ -209,15 +210,43 @@ end
         end
         i+=1
 
-        println("I: ", i)
-
+        # println("I: ", i)
+        # println("==========last_time: ", last_time, " cur_time: ", cur_time, " dt: ", cur_time-last_time)
         dt = norm(cur_time - last_time)
         last_time = cur_time
-        println("control: ", control, " dt: ", dt)
+        # println("control: ", control, " dt: ", dt/1e9)
         return control, dt
     end
 
-    data = my_sim_kf(control_law, 1000000)
-    display(plot(data, title="DeTumbleIO", xlabel="Time (s)", ylabel="Angular Velocity (rad/s)", labels=["ω1" "ω2" "ω3" "ω"]))
+    q_true, q_predicted, ω_true, q_error, β_error = my_sim_kf(control_law, 10000)
+    name = "MEKF/DeTumbling(IO)"
+    q_plot = (plot(
+        hcat(q_true, q_predicted),
+        title=name, 
+        xlabel="Time (s)", 
+        ylabel="Angular Velocity (rad/s)", 
+        labels=["s" "v1" "v2" "v3" "s'" "v1'" "v2'" "v3'"],
+        linecolor=[:blue :green :purple :orange :blue :green :purple :orange],
+        linewidth=[1 1 1 1 1 1 1 1],
+    ))
+    q_error_plot = plot(
+        q_error,
+        title="Quaternion Error",
+        xlabel="Time (s)",
+        ylabel="Radians",
+    )
+    ω_plot = plot(
+        ω_true,
+        title="Angular Velocity",
+        xlabel="Time (s)",
+        ylabel="Radians/s"
+    )
+    β_plot = plot(
+        β_error,
+        title="Gyro Bias Error",
+        xlabel="Time (s)",
+        ylabel="Radians"
+    )
+    display(plot(q_plot, q_error_plot, ω_plot, β_plot, layout=(2,2), dpi=300))
 
 end
