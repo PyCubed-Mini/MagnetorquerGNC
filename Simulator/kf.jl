@@ -10,9 +10,9 @@ mutable struct EKF
 end
 
 function hat(ω::Vector)
-    return [0 ω[3] -ω[2]
-        -ω[3] 0 ω[1]
-        ω[2] -ω[1] 0]
+    return [0 -ω[3] ω[2]
+        ω[3] 0 -ω[1]
+        -ω[2] ω[1] 0]
 end
 
 function f(
