@@ -18,9 +18,9 @@ using LinearAlgebra     # For I, norm
      - M:  A [3 × 3] skew-symmetric matrix    |  [3, 3]
 """
 function hat(v)
-    M = [0.0 -v[3] v[2]
-        v[3] 0.0 -v[1]
-        -v[2] v[1] 0.0]
+    M = [0.0 v[3] -v[2]
+        -v[3] 0.0 v[1]
+        v[2] -v[1] 0.0]
 
     return M
 end
