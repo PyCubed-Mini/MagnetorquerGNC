@@ -42,7 +42,11 @@ function step(
     V = I(6) * 1e-6 # some other noise
     # Predict:
     qₚ = f(q, β, ω, δt) # β remains constant
-    R = exp(-hat(ω - β) * δt)
+    # R = exp(-hat(ω - β) * δt)
+    v = - (ω - β)
+    mag = norm(v)
+    v̂ = hat(v/mag)
+    R = I(3) + (v̂) * sin(mag * δt) + (v̂^2) * (1 - cos(mag * δt)) # equivalent to e^{-hat(ω - β) * δt}
     A = [
         R (-δt*I(3))
         zeros(3, 3) I(3)
