@@ -42,7 +42,9 @@ function step(
     V = I(6) * 1e-6 # some other noise
     # Predict:
     qₚ = f(q, β, ω, δt) # β remains constant
+    # The following is equivalent to:
     # R = exp(-hat(ω - β) * δt)
+    # By the https://en.wikipedia.org/wiki/Rodrigues'_rotation_formula
     v = - (ω - β)
     mag = norm(v)
     v̂ = hat(v/mag)
