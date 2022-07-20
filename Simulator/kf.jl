@@ -9,11 +9,11 @@ mutable struct EKF
     P::Matrix{Float64}
 end
 
-function hat(ω::Vector)
-    return [0 -ω[3] ω[2]
-        ω[3] 0 -ω[1]
-        -ω[2] ω[1] 0]
-end
+# function hat(ω::Vector)
+#     return [0 -ω[3] ω[2]
+#         ω[3] 0 -ω[1]
+#         -ω[2] ω[1] 0]
+# end
 
 function f(
     q::Vector{Float64},
@@ -23,6 +23,8 @@ function f(
 )
     θ = norm(ω - β) * δt
     r = normalize(ω - β)
+    # println("q: ", q)
+    # println("L(q): ", L(q))
     return L(q) * [cos(θ / 2); r * sin(θ / 2)]
 end
 
@@ -33,8 +35,21 @@ function step(
     ⁿr_mag::Vector{Float64},
     ⁿr_sun::Vector{Float64},
     ᵇr_mag::Vector{Float64},
-    ᵇr_sun::Vector{Float64}
+    ᵇr_sun::Vector{Float64},
+    logging::Bool = false,
 )
+    if logging
+        println("Before: ")
+        println("e.q: ", e.q)
+        println("e.β: ", e.β)
+        println("e.P: ", e.P)
+        println("ω: ", ω)
+        println("δt: ", δt)
+        println("ⁿr_mag: ", ⁿr_mag)
+        println("ⁿr_sun: ", ⁿr_sun)
+        println("ᵇr_mag: ", ᵇr_mag)
+        println("ᵇr_sun: ", ᵇr_sun)
+    end
     q = e.q
     β = e.β
     P = e.P
@@ -77,6 +92,12 @@ function step(
     e.q = qᵤ
     e.β = βᵤ
     e.P = Pᵤ
+    if logging
+        println("After: ")
+        println("e.q: ", e.q)
+        println("e.β: ", e.β)
+        println("e.P: ", e.P)
+    end
     return e
 end
 
