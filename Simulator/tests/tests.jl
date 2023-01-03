@@ -218,7 +218,7 @@ end
         return control, dt
     end
 
-    q_true, q_predicted, ω_true, q_error, β_error = my_sim_kf(control_law, 10000)
+    q_true, q_predicted, ω_true, q_error, β_error = my_sim_kf(control_law, 50000)
     name = "MEKF/DeTumbling(IO)"
     q_plot = (plot(
         hcat(q_true, q_predicted),

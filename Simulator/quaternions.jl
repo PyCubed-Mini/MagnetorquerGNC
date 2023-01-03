@@ -39,9 +39,6 @@ end
 function L(q)
     qₛ, qᵥ = q[1], q[2:4]
 
-    # println("qᵥ: ", qᵥ)
-    # println(qᵥ[1]," ",qᵥ[2]," ",qᵥ[3])
-    # println("hat(qᵥ): ", hat(qᵥ))
     M = [qₛ -qᵥ'
         qᵥ qₛ*I(3)+hat(qᵥ)]
 

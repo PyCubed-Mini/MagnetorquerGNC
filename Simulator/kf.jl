@@ -9,12 +9,6 @@ mutable struct EKF
     P::Matrix{Float64}
 end
 
-# function hat(ω::Vector)
-#     return [0 -ω[3] ω[2]
-#         ω[3] 0 -ω[1]
-#         -ω[2] ω[1] 0]
-# end
-
 function f(
     q::Vector{Float64},
     β::Vector{Float64},
@@ -23,8 +17,6 @@ function f(
 )
     θ = norm(ω - β) * δt
     r = normalize(ω - β)
-    # println("q: ", q)
-    # println("L(q): ", L(q))
     return L(q) * [cos(θ / 2); r * sin(θ / 2)]
 end
 
@@ -63,9 +55,9 @@ function step(
     v = - (ω - β)
     mag = norm(v)
     v̂ = hat(v/mag)
-    R = I(3) + (v̂) * sin(mag * δt) + (v̂^2) * (1 - cos(mag * δt)) # equivalent to e^{-hat(ω - β) * δt}
+    R = I(3) + (v̂) * sin(mag * δt) + (v̂*v̂) * (1 - cos(mag * δt)) # equivalent to e^{-hat(ω - β) * δt}
     A = [
-        R (-δt*I(3))
+        R           (-δt*I(3))
         zeros(3, 3) I(3)
     ]
     Pₚ = A * P * A' + W
