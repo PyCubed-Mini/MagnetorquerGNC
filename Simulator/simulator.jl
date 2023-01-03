@@ -6,15 +6,19 @@
 """
 module Simulator 
     
-    using SatelliteDynamics, LinearAlgebra
+    using SatelliteDynamics, LinearAlgebra 
     include("mag_field.jl")
     include("quaternions.jl")
+    include("kf.jl")
+    include("gyro.jl")
+    include("utils.jl")
 
 
     export initialize_orbit, intialize_orbit_oe   # Generate valid initial conditions for a satellite 
     export rk4      # Interface function for updating state 
     export IGRF13   # Function call that provides magnetic field vector given position and time
     export my_sim
+    export my_sim_kf
 
     
     """
@@ -43,7 +47,7 @@ module Simulator
         r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
 
         if norm(r) < Rₑ
-            error("Error: Satellite impacted Earth at time $t!")
+            error("Error: Satellite impacted Earth at time $t !")
         end
 
 
@@ -240,19 +244,97 @@ module Simulator
         for i = 1:N - 1
             r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
             b = IGRF13(r, t)
-            x = rk4(x, J, control_fn(ω, b), t, dt)
+            m = control_fn(ω, b)
+            x = rk4(x, J, cross(m, b), t, dt)
             t += dt                      # Don't forget to update time (not that it really matters...)
             # q_hist[i + 1, :] .= x[7:10]
             q_hist[i + 1, 1:3] .= x[11:13]
             ω = norm(x[11:13])
+            q_hist[i + 1, 4] = ω
             if ω < 0.001
                 q_hist = q_hist[1:i, :]
                 break
             end
-            q_hist[i + 1, 4] = ω
         end
 
         return q_hist
+
+    end
+
+    function my_sim_kf(control_fn, N)
+        x₀ = initialize_orbit() 
+        println("intialized orbit!")
+
+        J  = [0.3 0 0; 0 0.3 0; 0 0 0.3]  # Arbitrary inertia matrix for the Satellite 
+        t  = Epoch(2020, 11, 30)          # Starting time is Nov 30, 2020
+        dt = 0.01                          # Time step, in seconds
+
+        q_true = zeros(N, 4)
+        q_predicted = zeros(N, 4)
+        ω_true = zeros(N, 1)
+        q_error = zeros(N, 1)
+        β_error = zeros(N, 1)
+
+        x = x₀
+        
+        q₀ = x₀[7:10]
+        β₀ = [0; 0; 0]
+
+        P₀ = I(6)
+        println("q0:", q₀)
+        kf = EKF(q₀, β₀, P₀)
+
+        Vβ = I(3) * 0.01
+        Vω = I(3) * 0.1
+        gyro = Gyro(β₀, Vβ, Vω)
+
+        progress_step = 0.001
+        cur = progress_step
+
+        for i = 1:N - 1
+            if i/N >= cur
+                println(string(cur * 100) * "%")
+                cur += progress_step
+            end
+        
+            r, v, q, ω = x[1:3], x[4:6], x[7:10], x[11:13]
+            ω_read = update(gyro, ω)
+
+            b = IGRF13(r, t)
+
+            r_sun  = sun_position(t)
+            inertial_sun = normalize(r_sun - r)
+            inertial_mag = normalize(b)
+
+            rsun = [0;0;0]
+            rmag = [0;0;0]
+            Q = quaternionToMatrix(q)'
+            body_sun = randomMatrix(0.001) * Q * (normalize(inertial_sun + rsun))
+            body_mag = randomMatrix(0.001) * Q * (normalize(inertial_mag + rmag))
+            step(kf, ω_read, dt, inertial_mag, inertial_sun, body_mag, body_sun)
+            q_true[i,:] .= q
+            q_predicted[i,:] .= kf.q
+            ω_true[i] = norm(ω)
+            q_error[i] = qErr(kf.q, q)
+            β_error[i] = eulerError(gyro.β, kf.β)
+
+
+            if norm(ω) < 0.01
+                q_true = q_true[1:i, :]
+                q_predicted = q_predicted[1:i, :]
+                ω_true = ω_true[1:i]
+                q_error = q_error[1:i]
+                β_error = β_error[1:i]
+                break
+            end
+            # propogate everything forward
+            control, dt = control_fn(ω_read - kf.β, b)
+            dt /= 1e9  # convert from nanoseconds to seconds
+            x = rk4(x, J, cross(control, b), t, dt)
+            t += dt  # Don't forget to update time
+        end
+
+        return q_true, q_predicted, ω_true, q_error, β_error
 
     end
 end
